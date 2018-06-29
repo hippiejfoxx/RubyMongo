@@ -18,7 +18,7 @@ class Racer
     return Mongoid::Clients.default
   end
 
-  def self.all(prototype={}, sort={ number: 1}, skip=0, limit=nil)
+  def self.all(prototype={}, sort={ number: 1 }, skip=0, limit=nil)
     res = self.mongo_client['racers'].find(prototype).sort(sort).skip(skip)
     res = res.limit(limit) if !limit.nil?
     return res
@@ -69,8 +69,27 @@ class Racer
   def created_at
     nil
   end
-  
+
   def updated_at
     nil
+  end
+
+  def self.paginate(params)
+    page=(params[:page] || 1).to_i
+    limit=(params[:per_page] || 30).to_i
+    skip=(page-1)*limit
+    racers=[]
+
+
+    set = self.all({}, { number: 1 }, skip, limit).find.map{|x| Racer.new(x)}
+    set.each do |x|
+      racers << x
+    end
+    
+    total = self.all({}, { number: 1 }, skip, limit).count
+
+    WillPaginate::Collection.create(page, limit, total) do |pager|
+      pager.replace(racers)
+    end
   end
 end
